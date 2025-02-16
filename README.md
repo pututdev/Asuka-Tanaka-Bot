@@ -5,7 +5,7 @@ dibuat dengan menggunakan Node.Js dan beberapa fitur kedepannya akan di update b
 
 Gunakan Bot ini dengan baik dan jangan disalah gunakan :>
 
-<center> <img src = "https://github.com/pututdev/Asuka-Tanaka-Bot/blob/main/AsukaTanaka.jpg" width = "400" height="400"> </center>
+<p align="center"><img src = "https://github.com/pututdev/Asuka-Tanaka-Bot/blob/main/AsukaTanaka.jpg" width = "400" height="400"> </p>
 
 
 sumber referensi bot : <a href="https://github.com/Rifza123/Experimental-Bell">Touch Me Senpai :></a>
