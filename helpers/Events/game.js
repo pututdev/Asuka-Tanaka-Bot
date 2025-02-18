@@ -28,7 +28,20 @@ export default
 async function on({Exp, cht, ev }) {
     const { id } = cht
     const { func } = Exp
+    let { archiveMemories:memories, parseTimeString, clearSessionConfess, findSenderCodeConfess, formatDuration } = func
     
+    function setQCmd(__id, players, emit){
+      for(let { id:_id } of players){
+        let qcmds = memories.getItem(_id+from.sender, "quotedQuestionCmd") ||{}
+           qcmds[__id] = {
+             emit,
+             exp: Date.now() + 60000 * 4,
+             accepts: []
+           }
+        memories.setItem(_id+from.sender, "quotedQuestionCmd", qcmds)
+      }
+    }
+              
     let metadata = Data.preferences[id]
     let game = metadata?.game || false
     if(game){
@@ -268,9 +281,11 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
       tag: 'game',
       //  energy: 35, opsional
     }, async ({ args }) => {
+      let _id1;
       const senderNumber = cht.sender.split('@')[0];
       const [action, param1] = (args || '').split(' ', 2);
       const chatId = cht.id;
+      
       let games = Data.preferences[cht.id]?.chess || {}
       /*
           [ '––『CREDIT THANKS TO』––' ]
@@ -346,23 +361,27 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
         if (room.players.length < 2) return cht.reply('⚠️ Butuh dua pemain untuk memulai game.');
 
         const boardUrl = `https://chessboardimage.com/${room.fen}.png`;
-        Exp.sendMessage(cht.id, {
+        let { key: key1 } = await Exp.sendMessage(cht.id, {
           image: { url: boardUrl },
           caption: `🎲 Permainan dimulai! Giliran: ${room.turn.toUpperCase()}`
         });
+        setQCmd(key1.id, room.players, `${cht.cmd} move`)
         return;
       }
+      
 
       if (action === 'move') {
         const [_, from, to, promotion] = args.toLowerCase().split(/\s+/); // buat promosi 🗿(e.g. e7 e8 q)
     
    
         if (!from || !to) {
-          return cht.reply(
+          let { key: key1 } = await cht.reply(
               '❌ Format salah. Contoh penggunaan:\n' +
               '• `.chess move e2 e4` - Langkah biasa\n' +
               '• `.chess move e7 e8 q` - Promosi pion ke ratu'
-          );
+          )
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+          
         }
 
         const senderNumber = cht.sender.split('@')[0];
@@ -372,7 +391,8 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
         );
     
         if (!roomName) {
-          return cht.reply('❌ Anda belum bergabung dalam permainan!');
+          let { key:key1 } = await cht.reply('❌ Anda belum bergabung dalam permainan!');
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
         }
 
         const room = games[roomName];
@@ -394,7 +414,8 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
         }
     
         if (player.color !== room.turn) {
-          return cht.reply(`⏳ Bukan giliran Anda! Giliran ${room.turn.toUpperCase()}`);
+          let { key:key1 } = await cht.reply(`⏳ Bukan giliran Anda! Giliran ${room.turn.toUpperCase()}`);
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
         }
 
   
@@ -416,14 +437,16 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
 			packname: 'Chess',
 			author: 'Ⓒ' + cht.pushName
 		  })
-		  Exp.sendMessage(id, {
+		  let { key:key } = await Exp.sendMessage(id, {
 			sticker: {
 				url: res
 			}
 		  }, {
 			quoted: cht
 		  })
-          await cht.reply(`✅ Berhasil pindah ${from}➡️${to}\nGiliran ${room.turn.toUpperCase()}`)
+		  setQCmd(key.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+          let { key: key1 } = await cht.reply(`✅ Berhasil pindah ${from}➡️${to}\nGiliran ${room.turn.toUpperCase()}`)
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
           /* 
            ### KALO MAU DIUBAH KE IMAGE ###
            await Exp.sendMessage(chatId, {
@@ -454,7 +477,8 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
           } else {
             errorMessage += 'Contoh: `.chess move e2 e4` atau `.chess move e7 e8 q`';
           }
-          return cht.reply(errorMessage);
+          let { key:key1 } = await cht.reply(errorMessage);
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
        }
     }
 
@@ -469,4 +493,188 @@ ${Array.isArray(game.answer) ? game.answer.map((item, index) => `${index + 1}. $
 
     return cht.reply('❌ Perintah tidak dikenal. Gunakan `.chess help` untuk melihat daftar perintah.');
   });
+   
+  ev.on({
+    cmd: ["sos"],
+    //listmenu: ["sos"],
+    tag: "game",
+    args: `Format: .sos <create/join/leave/theme/move> <room_name>`,
+  }, async ({ cht }) => {
+    const [action, param1, param2] = (cht.q || "").split(" ");
+    const chatId = cht.id;
+    const senderNumber = cht.sender.split('@')[0];
+
+    let sessions = Data.preferences[chatId].sos || {}
+
+    function formatBoard(board) {
+        return `\n${board[0]} | ${board[1]} | ${board[2]}\n` +
+               `---------\n` +
+               `${board[3]} | ${board[4]} | ${board[5]}\n` +
+               `---------\n` +
+               `${board[6]} | ${board[7]} | ${board[8]}\n`;
+    }
+    
+    /* BELUM KELAR!!
+          [ '––『CREDIT THANKS TO』––' ]
+          ┊ALLAH S.W.T.
+          ┊RIFZA
+          ┊Penyedia Modul
+          ❏═•═━〈 SORRY WATERMARK
+          ┊sorry ada watermark
+          ┊donasi ovo/dana: ┊083147309847 (Hanif)
+          ┊wa: 083147309847 (Hanif)
+          ┊request fitur juga boleh
+          ┊buat beli lauk dan nasi hehe
+          ┊
+          ┊Numpang ya bang, hehe.
+          ┊  ###By: Hanif Skizo
+          ┗–––––––––––––––––––––––––✦
+        */
+
+    function checkGameStatus(board) {
+        const winConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Baris
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolom
+            [0, 4, 8], [2, 4, 6],           // Diagonal
+        ];
+
+        for (const condition of winConditions) {
+            const [a, b, c] = condition;
+            if (board[a] === board[b] && board[b] === board[c]) {
+                return "win";
+            }
+        }
+        if (!board.some(cell => typeof cell === "number")) {
+            return "draw";
+        }
+        return "ongoing";
+    }
+
+    if (!action) {
+        return cht.reply(
+            "❌ Gunakan perintah berikut:\n" +
+            "• `.sos create <room>` - Buat game baru\n" +
+            "• `.sos join <room>` - Gabung game\n" +
+            "• `.sos leave` - Keluar dari game\n" +
+            "• `.sos theme <1/2/3>` - Pilih tema simbol\n" +
+            "• `.sos move <posisi>` - Letakkan simbol"
+        );
+    }
+
+    if (action === "theme") {
+        if (!param1 || !["1", "2", "3"].includes(param1)) {
+            return cht.reply(
+                "❌ Harap pilih tema dengan angka 1, 2, atau 3. Contoh: `.sos theme 1`.\n" +
+                "Tema yang tersedia:\n" +
+                "1. 🧿(1) 👾(2)\n2. 🐱(1) 🐶(2)\n3. 🌋(1) 🏔️(2)"
+            );
+        }
+
+        const themes = {
+            1: ["🧿", "👾"],
+            2: ["🐱", "🐶"],
+            3: ["🌋", "🏔️"],
+        };
+        
+        sessions.theme = themes[param1];
+        Data.preferences[chatId].sos = sessions
+        return cht.reply(`✅ Tema "${param1}" berhasil dipilih! Simbol: ${themes[param1][0]} (1) & ${themes[param1][1]} (2).`);
+    }
+
+    if (action === "create") {
+        if (!param1) return cht.reply("❌ Harap masukkan nama room. Contoh: `.sos create HanifRoom`.");
+        if (sessions[param1]) return cht.reply("❌ Room sudah ada. Pilih nama lain.");
+
+        const symbols = sessions.theme || ["⭕", "❌"];
+        sessions[param1] = {
+            board: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            players: [{ id: senderNumber, symbol: symbols[0] }],
+            turn: symbols[0],
+        };
+        Data.preferences[chatId].sos = sessions
+        return cht.reply(`✅ Room "${param1}" berhasil dibuat!`);
+    }
+
+    if (action === "join") {
+        if (!param1) return cht.reply("❌ Masukkan nama room. Contoh: `.sos join HanifRoom`.");
+        if (!sessions[param1]) return cht.reply("❌ Room tidak ditemukan.");
+        if (sessions[param1].players.length >= 2) return cht.reply("❌ Room sudah penuh.");
+
+        const symbols = sessions[param1].players[0].symbol === "⭕" ? "❌" : "⭕";
+        sessions[param1].players.push({ id: senderNumber, symbol: symbols });
+        Data.preferences[chatId].sos = sessions
+        let { key: key1 } = await cht.reply(`✅ Anda bergabung dalam room "${param1}"!`);
+        return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+    }
+
+    if (action === "leave") {
+        const roomName = Object.keys(sessions).find(r => 
+            sessions[r].players.some(p => p.id === senderNumber)
+        );
+
+        if (!roomName) return cht.reply("❌ Anda tidak berada di game mana pun.");
+
+        delete sessions[roomName];
+        Data.preferences[chatId].sos = sessions
+        return cht.reply(`✅ Anda keluar dari room "${roomName}".`);
+    }
+
+    if (action === "move") {
+        if (!param1){
+          let { key: key1 } = await cht.reply("❌ Masukkan posisi angka (1-9). Contoh: `.sos move 5`.");
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+        
+        const roomName = Object.keys(sessions).find(r =>
+            sessions[r].players.some(p => p.id === senderNumber)
+        );
+
+        if (!roomName){
+          let { key: key1 } = await cht.reply("❌ Anda belum bergabung dalam permainan!");
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+
+        const room = sessions[roomName];
+        const player = room.players.find(p => p.id === senderNumber);
+
+        if (!player){
+          let { key: key1 } = await cht.reply("❌ Anda bukan peserta dalam game ini!");
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+        if (room.turn !== player.symbol){
+          let { key: key1 } = await cht.reply(`⏳ Bukan giliran Anda! Giliran: ${room.turn}`);
+          return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+
+        const position = parseInt(param1) - 1;
+        if (isNaN(position) || position < 0 || position > 8) {
+            let { key: key1 } = await cht.reply("❌ Posisi tidak valid. Gunakan angka 1-9.");
+            return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+
+        if (typeof room.board[position] !== "number") {
+            let { key: key1 } = await cht.reply("❌ Posisi sudah terisi. Pilih tempat lain.");
+            return setQCmd(key1.id, [{ id: cht.sender.split("@")[0] }], `${cht.cmd} move`)
+        }
+
+        room.board[position] = player.symbol;
+        room.turn = player.symbol === "⭕" ? "❌" : "⭕";
+        
+        const status = checkGameStatus(room.board);
+
+        let boardText = `🎲 *Papan Permainan:*\n${formatBoard(room.board)}`;
+        
+        if (status === "win") {
+            delete sessions[roomName];
+            return cht.reply(`🏆 *${player.symbol} Menang!*\n${boardText}`);
+        } else if (status === "draw") {
+            delete sessions[roomName];
+            return cht.reply(`🤝 Permainan Seri!\n${boardText}`);
+        }
+        Data.preferences[chatId].sos[roomName] = room
+        return cht.reply(`${boardText}\nGiliran: ${room.turn}`);
+    }
+
+    return cht.reply("❌ Perintah tidak dikenal. Gunakan `.sos help` untuk melihat daftar perintah.");
+});
 }

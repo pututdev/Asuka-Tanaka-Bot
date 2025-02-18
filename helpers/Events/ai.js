@@ -4,6 +4,7 @@ const fs = "fs".import()
 
 /*!-======[ Functions Imports ]======-!*/
 const { gpt } = await (fol[2] + "gpt3.js").r()
+const { deepseek } = await (fol[2] + "deepseek.js").r()
 const { GeminiImage } = await (fol[2] + "gemini.js").r()
 const { tmpFiles } = await (fol[0] + 'tmpfiles.js').r()
 const { catbox } = await (fol[0] + 'catbox.js').r()
@@ -132,8 +133,7 @@ export default async function on({ Exp, ev, store, cht, ai, is }) {
         cmd: ['txt2img', 'text2img','stablediffusion'],
         listmenu: ['text2img'],
         tag: 'stablediffusion',
-        energy: 35,
-        premium: true
+        energy: 35
     }, async () => {
     const _key = keys[sender]
     if (!cht.q) return cht.reply(infos.ai.txt2img)
@@ -144,9 +144,14 @@ export default async function on({ Exp, ev, store, cht, ai, is }) {
       try {
       
         let ckpt = model.split("[")[0]
-        let loraPart = model.split("[")[1]?.replace("]", "")
+        let loraPart = model.split("[")[1]?.split("]")?.[0]
         let loras = loraPart ? JSON.parse("[" + loraPart + "]") : []
-        if(!ckpt||!prompt) return cht.reply(infos.ai.txt2img)
+        let as = model.split(']')[1]
+        let asp = ["1:1","9:16","16:9","3:4","4:3","2:3","3:2","21:9","9:21","5:4","4:5","18:9","9:18","16:10","10:16"]
+        let aspect_ratio = as?.length > 1 ? as : '3:4'
+        if(!aspect_ratio.includes(':')) return cht.reply(`*Invalid Aspect ratio!*\n\n${infos.ai.txt2img}`)
+        if(!asp.includes(aspect_ratio)) return cht.reply(`*Invalid aspect ratio!*\n\nList aspect ratio:\n- ${asp.join('\n- ')}`)
+        if(!ckpt||!prompt) return cht.reply(`*Please input checkpoints & prompt!*\n\n${infos.ai.txt2img}`)
         await cht.edit(infos.messages.wait, _key, true)
 
         let [checkpointsResponse, lorasResponse] = await Promise.all([
@@ -195,7 +200,7 @@ ${notSameLora.join('\n')}`
             checkpoint: checkpoints[ckpt].model,
             prompt: prompt,
             negativePrompt: negative || "",
-            aspect_ratio: "3:4",
+            aspect_ratio,
             lora: lora,
             sampling: "DPM++ 2M Karras",
             samplingSteps: 20,
@@ -213,7 +218,7 @@ ${notSameLora.join('\n')}`
         })
 
         if (!aiResponse.ok) {
-            return cht.reply(`HTTP error! status: ${aiResponse.status}`)
+            return cht.reply(`HTTP error! status: ${aiResponse.status}${aiResponse.status == 429 ? '\n_Rate limit reached! please check your limit apikey!_': aiResponse.status == 403 ? '_Your apikey is invalid or expired! Please check .cekapikey for details your key':''}`)
         }
 
         let ai = await aiResponse.json()
@@ -231,7 +236,7 @@ ${notSameLora.join('\n')}`
             let sResponse = await fetch(`${api.xterm.url}/api/text2img/stablediffusion/taskStatus?id=${ai.id}`)
 
             if (!sResponse.ok) {
-                return cht.reply(`HTTP error! status: ${sResponse.status}`)
+                return cht.reply(`HTTP error! status: ${sResponse.status}${aiResponse.status == 429 ? '\n_Rate limit reached! please check your limit apikey!_': sResponse.status == 403 ? '_Your apikey is invalid or expired! Please check .cekapikey for details your key':''}`)
             }
 
             let s = await sResponse.json()
@@ -381,8 +386,19 @@ ${notSameLora.join('\n')}`
         cht.reply("[ GPT-3 ]\n"+res.response, { ai: true })
 	})
 	
+	ev.on({ 
+        cmd: ['deepseek','deepseek-r1'],
+        tag: "ai",
+        args: infos.ai.isQuery,
+        listmenu: ["deepseek"],
+        energy: 7
+    }, async() => {
+        let res = await deepseek(cht.q)
+        cht.reply("[ DEEPSEEK-R1 ]\n"+res.response, { ai: true })
+	})
+	
     ev.on({ 
-        cmd: ['jagpro', 'autoai', 'aichat', 'ai_interactive'],
+        cmd: ['bell', 'autoai', 'aichat', 'ai_interactive'],
         tag: "ai",
         listmenu: ["autoai"]
     }, async () => {
@@ -395,7 +411,7 @@ ${notSameLora.join('\n')}`
                     body: "Artificial Intelligence, The beginning of the robot era",
                     thumbnailUrl: "https://telegra.ph/file/e072d1b7d5fe75221a36c.jpg",
                     sourceUrl: urlglobal,
-                    mediaUrl: `http://ẉa.me/6282252509320/9992828`,
+                    mediaUrl: `http://ẉa.me/6283110928302/9992828`,
                     renderLargerThumbnail: true,
                     showAdAttribution: true,
                     mediaType: 1,
@@ -679,7 +695,7 @@ ${notSameLora.join('\n')}`
                                  body: data.result.tags,
                                  thumbnailUrl: data.result.imageUrl,
                                  sourceUrl: urlglobal,
-                                 mediaUrl: `http://ẉa.me/6282252509320/${Math.floor(Math.random() * 100000000000000000)}`,
+                                 mediaUrl: `http://ẉa.me/6283110928302/${Math.floor(Math.random() * 100000000000000000)}`,
                                  renderLargerThumbnail: true,
                                  showAdAttribution: true,
                                  mediaType: 1,

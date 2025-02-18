@@ -56,7 +56,7 @@ export default async function on({ cht, Exp, store, ev, is }) {
                     title: cht.pushName,
                     body: "Artificial Intelligence, The beginning of the robot era",
                     thumbnail: fs.readFileSync(fol[3] + "bell.jpg"),
-                    sourceUrl: "https://github.com/Rifza123",
+                    sourceUrl: urlglobal,
                     mediaUrl: `http://ẉa.me/6283110928302/${Math.floor(Math.random() * 100000000000000000)}`,
                     renderLargerThumbnail: true,
                     showAdAttribution: true,
@@ -65,7 +65,7 @@ export default async function on({ cht, Exp, store, ev, is }) {
                 forwardingScore: 19,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363301254798220@newsletter",
+                    newsletterJid: urlsaluran,
                     newslettedName: "Termai",
                     serverMessageId: 152
                 }
@@ -75,7 +75,6 @@ export default async function on({ cht, Exp, store, ev, is }) {
         }
         Data.audio?.menu?.length > 0 && Exp.sendMessage(cht.id, { audio: { url: Data.audio.menu.getRandom() }, mimetype: "audio/mpeg" }, { quoted: cht })
     })
- 
     
     ev.on({ 
         cmd: ['reaction','menureaction','reactionmenu'],

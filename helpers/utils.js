@@ -127,7 +127,7 @@ async function utils({ Exp, cht, is, store }) {
 
         is.group = cht.id?.endsWith(from.group)
         is.me = cht?.key?.fromMe
-        is.owner =  global.owner.some(a => { const jid = a?.split("@")[0]?.replace(/[^0-9]/g, ''); return jid && (jid + from.sender === cht.sender) }) || is.me
+        is.owner =  global.owner.some(a => { const jid = String(a)?.split("@")[0]?.replace(/[^0-9]/g, ''); return jid && (jid + from.sender === cht.sender) }) || is.me
 		const groupDb = is.group ? Data.preferences[cht.id] : {}
 
         is.baileys = /^(3EB|BAE5|BELL409|B1E)/.test(cht.key.id)

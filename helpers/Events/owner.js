@@ -601,11 +601,11 @@ export default async function on({ cht, Exp, store, ev, is }) {
           let formatDur = func.formatDuration(_time|| 0)
           let ban = func.formatDuration(bantime - Date.now())
           await Exp.sendMessage(cht.mention[0], { text: func.tagReplacer(infos.owner.addBanned, { ...ban }) })
-          await cht.reply(func.tagReplacer(infos.owner.bannedSuccess, { ...formatDur,Sender }),  {mentions: cht.mention})
+          await cht.reply(func.tagReplacer(infos.owner.bannedSuccess, { ...formatDur,sender:Sender }),  {mentions: cht.mention})
           await func.archiveMemories.setItem(Sender, "banned", bantime)
         } else {
           await Exp.sendMessage(cht.mention[0], { text: infos.owner.delBanned })
-          await cht.reply(func.tagReplacer(infos.owner.unBannedSuccess, { Sender }), {mentions: cht.mention})
+          await cht.reply(func.tagReplacer(infos.owner.unBannedSuccess, { sender:Sender }), {mentions: cht.mention})
           func.archiveMemories.delItem(Sender, "banned")
         }
         

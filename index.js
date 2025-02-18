@@ -8,9 +8,6 @@
       ▪︎ https://www.threads.net/@rifza.p.p
       ▪︎ https://xterm.tech
   */
-
-	  //RECODE BY https://youtube.com/@jagoanproject
-	  
 /*!-======[ Preparing Configuration ]======-!*/
 import "./toolkit/set/string.prototype.js";
 await "./toolkit/set/global.js".r()
@@ -32,8 +29,7 @@ let {
   	DisconnectReason,
   	getContentType,
   	makeInMemoryStore,
-  	Browsers,
-  	getAggregateVotesInPollMessage
+  	Browsers
 } = baileys;
 /*!-======[ Functions Imports ]======-!*/
 let detector = (await (fol[0] + "detector.js").r()).default
@@ -52,65 +48,48 @@ let store = makeInMemoryStore({ logger });
 
 async function launch() {
   try {
-   const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
 
-// Fungsi untuk menerima input dari user
-const question = (text) => new Promise((resolve) => rl.question(text, resolve));
+    const question = (text) => new Promise((resolve) => rl.question(text, resolve));
+    if(fs.existsSync(session) && !fs.existsSync(session + "/creds.json")) await fs.rmdir(session, { recursive: true }, (err) => {} )   
+    if (!fs.existsSync(session + "/creds.json")) {
+    let quest = `\n${chalk.red.bold('╭──────────────────────────────────────────────────────╮')}\n${chalk.red.bold('│')} ${chalk.bold('❗️ Anda belum memiliki session ❗️')} ${chalk.red.bold('│')}\n${chalk.red.bold('╰──────────────────────────────────────────────────────╯')}\n            \n${chalk.green('🏷 Pilih salah satu dari opsi berikut untuk menautkan perangkat:')}\n${chalk.blue('▪︎ qr')}\n${chalk.blue('▪︎ pairing')}\n\n${chalk.yellow('* Ketik salah satu dari opsi di atas, contoh:')} ${chalk.blue.bold('pairing')}\n\n${chalk.yellow('Please type here: ')}`;
+ 
+        await sleep(1000)
+        const opsi = await question(quest);
+  	    if (opsi == "pairing") {
+  			global.pairingCode = true
+  		} else if (opsi == "qr") {
+  			global.pairingCode = false
+  		} else {
+  			console.log(`Pilihan opsi tidak tersedia!`)
+  		}
+  	}
+  	
+  	let { state, saveCreds } = await useMultiFileAuthState(session);
+        const Exp = makeWASocket({
+            logger,
+            printQRInTerminal: !global.pairingCode,
+            browser: Browsers.ubuntu('Chrome'),
+            auth: state
+        });
+        
+        if (global.pairingCode && !Exp.authState.creds.registered) {
+           const phoneNumber = await question(chalk.yellow('Please type your WhatsApp number : '));
+           let code = await Exp.requestPairingCode(phoneNumber.replace(/[+ -]/g, ""));
+           console.log(chalk.bold.rgb(255, 136, 0)(`\n  ╭────────────────────────────╮\n  │  ${chalk.yellow('Your Pairing Code:')} ${chalk.greenBright(code)}  │\n  ╰────────────────────────────╯\n            `)
+           );
+        }
+        
+        /*!-======[ INITIALIZE Exp Functions ]======-!*/
+        Data.initialize({ Exp, store })
 
-if (fs.existsSync(session) && !fs.existsSync(session + "/creds.json")) {
-    await fs.promises.rm(session, { recursive: true }).catch(() => {});
-}
-/////////IKLAN DAN LOADING////////////
-console.log(chalk.yellow.bold('Ingin Membeli Panel Unlimited seharga 10k saja? Hubungi kami, 0895-3622-82300 atau setelah anda terkoneksi nanti, ketik .owner'));
-console.log(chalk.red.bold('Apa yang akan kamu dapatkan?'));
-console.log(chalk.green.bold('✓ ') + chalk.red('Unlimited RAM Selama Sebulan'));
-console.log(chalk.green.bold('✓ ') + chalk.red('Grup Buyer, gw gak bakal Kabur kalau Mokad'));
-console.log(chalk.green.bold('✓ ') + chalk.red('Garansi 25 hari'));
-console.log(chalk.green.bold('✓ ') + chalk.red('Fast Response'));
-console.log(chalk.green.bold('✓ ') + chalk.red('Free Script Auto-AI'));
-console.log(chalk.green.bold('MEMULAI BOT WHATSAPP... '));
-console.log(chalk.green.bold('______________'));
-  
-///////////////IKLAN//////////////	
-if (!fs.existsSync(session + "/creds.json")) {
-    let quest = `\n${chalk.red.bold('╭──────────────────────────────────────────────────────╮')}\n${chalk.red.bold('│')} ${chalk.bold('❗️ Anda belum memiliki session ❗️')} ${chalk.red.bold('│')}\n${chalk.red.bold('╰──────────────────────────────────────────────────────╯')}\n            \n${chalk.green('🏷 Perangkat akan ditautkan menggunakan metode pairing code')} \n\n${chalk.yellow('Silakan masukkan nomor Whatsapp anda :')}${chalk.blue.bold(' 628xxxx')}`;
-
-    await sleep(1000);
-    console.log(quest);
-    global.pairingCode = true;
-}
-
-let { state, saveCreds } = await useMultiFileAuthState(session);
-const Exp = makeWASocket({
-    logger,
-    printQRInTerminal: false,  // Tidak lagi menggunakan QR
-    browser: Browsers.ubuntu('Chrome'),
-    auth: state,
-    getMessage: async (key) => {
-        const msg = await store.loadMessage(key.remoteJid, key.id);
-        return msg?.message;
-    }
-});
-
-/*!-======[ Detect File Update ]======-!*/
-detector({ Exp, store });
-
-if (global.pairingCode && !Exp.authState.creds.registered) {
-    const phoneNumber = await question(chalk.yellow('Nomor WhatsApp Anda: '));
-    let code = await Exp.requestPairingCode(phoneNumber.replace(/[+ -]/g, ""));
-
-    // Memisahkan pairing code menjadi format XXXX-XXXX
-    let formattedCode = code.match(/.{1,4}/g).join('-');
-
-    console.log(chalk.bold.rgb(255, 136, 0)(`\n  ╭────────────────────────────╮\n  │  ${chalk.yellow('Your Pairing Code:')} ${chalk.greenBright(formattedCode)}  │\n  ╰────────────────────────────╯\n            `));
-}
-
-Data.initialize({ Exp, store });
-
-rl.close();
+        /*!-======[ Detect File Update ]======-!*/
+        detector({ Exp, store })
+        
         /*!-======[ EVENTS Exp ]======-!*/
         Exp.ev.on('connection.update', async (update) => {
             await Connecting({ update, Exp, Boom, DisconnectReason, sleep, launch });
@@ -118,11 +97,12 @@ rl.close();
 
         Exp.ev.on('creds.update', saveCreds);
         
-        Exp.ev.on('messages.upsert', async Ev => {
-  		  for(let message of Ev.messages){
+        Exp.ev.on('messages.upsert', async ({
+  			messages
+  		}) => {
             const cht = {
-                ...message,
-                id: message.key.remoteJid
+                ...messages[0],
+                id: messages[0].key.remoteJid
             }
             let isMessage = cht?.message
             let isStubType = cht?.messageStubType
@@ -155,41 +135,7 @@ rl.close();
                   await Data.helper(exs);
                  }
              }
-          }
 	    });
-	    
-	    Exp.ev.on('messages.update', async Ev => {
-  		  for(let { key, update } of Ev){
-  		  let isPoll = update?.pollUpdates
-  		    if (isPoll) {
-  		      if(key.participant !== Exp.number) return
-  		      let { message, key: key2 } = await store.loadMessage(key.remoteJid, key.id) || {}
-  		      if (message) {
-  			    let Poll = await getAggregateVotesInPollMessage({
-  		  		  message,
-  		  	      pollUpdates: isPoll,
-  			    })
-  			    let cmd = `${global.prefix||'#'}${Poll.filter(v => v.voters.length !== 0)[0]?.name}`
-  			    key2.participant = key.participant
-  			    key2.id = key.id
-  			    let cht = {
-  			      message: {
-  			        pollCreationMessageV3: {
-  			          name: cmd
-  			        }
-  			      },
-  			      key,
-  			      id: key2.remoteJid
-  			    }
-  			  
-  			    const exs = { cht, Exp, is: {}, store }
-  			    await Data.utils(exs)
-  			    await Data.helper(exs)
-  			  }
-  		    }
-  		  }
-  			
-  		})
 	    
 	    Exp.ev.on('call', async([c])=>{
 	      let { from, id, status } = c

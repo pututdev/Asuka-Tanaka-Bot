@@ -110,7 +110,7 @@ async function In({ cht,Exp,store,is,ev }) {
 
 		switch (!0) {
 		    case isTagAfk: 
-		        let maxTag = 3
+		        let maxTag = 10
 		        let tagAfk = memories.getItem(cht.mention[0], "afk")
 		        let userData = await memories.get(sender)
 		        tagAfk.taggedBy = tagAfk.taggedBy||{}
@@ -142,14 +142,14 @@ async function In({ cht,Exp,store,is,ev }) {
 		        memories.delItem(sender, "afk")
 		        break
 		    case is.antibot:
-                cht.warnGc({ type: "antibot", warn: "Bot terdeteksi!, harap aktifkan mute di group ini atau ubah mode menjadi self!", kick:"Anda akan dikeluarkan karena tidak menonaktifkan bot hingga peringatan terakhir!", max: 2 })
+                cht.warnGc({ type: "antibot", warn: "Bot terdeteksi!, harap aktifkan mute di group ini atau ubah mode menjadi self!", kick:"Anda akan dikeluarkan karena tidak menonaktifkan bot hingga peringatan terakhir!", max: 5 })
                 break
 			case is.antilink:
-                await cht.warnGc({ type: "antilink", warn: "Anda terdeteksi mengirimkan link!. Harap ikuti peraturan disini untuk tidak mengirim link!", kick:"Anda akan dikeluarkan karena melanggar peraturan grup untuk tidak mengirim link hingga peringatan terakhir!", max: 2})
+                await cht.warnGc({ type: "antilink", warn: "Anda terdeteksi mengirimkan link!. Harap ikuti peraturan disini untuk tidak mengirim link!", kick:"Anda akan dikeluarkan karena melanggar peraturan grup untuk tidak mengirim link hingga peringatan terakhir!", max: 3})
 				cht.delete()
 				break
 			case is.antiTagall:
-                await cht.warnGc({ type: "antitagall", warn: "Anda terdeteksi melakukan tagall/hidetag. Harap ikuti peraturan disini untuk tidak melakukan tagall/hidetag karena akan mengganggu member disini!", kick:"Anda akan dikeluarkan karena melanggar peraturan grup untuk tidak melakukan tagall/hidetag hingga peringatan terakhir!", max: 2})
+                await cht.warnGc({ type: "antitagall", warn: "Anda terdeteksi melakukan tagall/hidetag. Harap ikuti peraturan disini untuk tidak melakukan tagall/hidetag karena akan mengganggu member disini!", kick:"Anda akan dikeluarkan karena melanggar peraturan grup untuk tidak melakukan tagall/hidetag hingga peringatan terakhir!", max: 3})
 				cht.delete()
 				break
 			case isEvalSync:
@@ -378,9 +378,9 @@ async function In({ cht,Exp,store,is,ev }) {
 
 			case isBella: {
 				let usr = sender.split("@")[0]
-				let user = Data.users[usr]
+				let user = Data.users[usr] || {}
 				let premium = user?.premium ? Date.now() < user.premium.time : false
-				user.autoai.use += 1
+				if(user?.autoai?.use) user.autoai.use++
 				if (Date.now() >= user?.autoai?.reset && !premium) {
 					user.autoai.use = 0
 					user.autoai.reset = Date.now() + parseInt(user?.autoai?.delay)
